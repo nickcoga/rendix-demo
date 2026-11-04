@@ -1,0 +1,59 @@
+{
+  "expo": {
+    "name": "Rendix",
+    "slug": "rendix-demo",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "rendix",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.softvalley.rendix",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Rendix necesita acceder a la cámara para fotografiar facturas, boletas y comprobantes de gastos.",
+        "NSPhotoLibraryUsageDescription": "Rendix necesita acceder a la galería para seleccionar imágenes de comprobantes."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#001F3F"
+      },
+      "package": "com.softvalley.rendix",
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.INTERNET"
+      ]
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-sqlite",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "backgroundColor": "#001F3F",
+          "imageWidth": 150
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Rendix necesita acceder a tus fotos para adjuntar comprobantes de viáticos.",
+          "cameraPermission": "Rendix necesita acceder a la cámara para fotografiar facturas y tickets de viáticos."
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
