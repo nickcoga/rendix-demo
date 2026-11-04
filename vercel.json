@@ -1,9 +1,10 @@
 {
   "version": 2,
   "functions": {
-    "api/extract.js": {
+    "api/extract.mjs": {
       "maxDuration": 15,
       "memory": 1024
     }
   }
 }
+

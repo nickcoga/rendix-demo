@@ -1,5 +1,5 @@
 import http from 'http';
-import handler from '../api/extract.js';
+import handler from '../api/extract.mjs';
 
 const server = http.createServer((req, res) => {
   let body = '';
