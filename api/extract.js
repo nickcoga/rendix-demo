@@ -64,9 +64,8 @@ export default async function handler(req, res) {
   try {
     const ai = new GoogleGenAI({ apiKey });
 
-    // Models priority: gemini-3.8-flash, fallback to gemini-2.5-flash
-    const primaryModel = process.env.GEMINI_MODEL || 'gemini-3.8-flash';
-    const fallbackModel = 'gemini-2.5-flash';
+    // Modelo exclusivo de extracción: gemini-3.8-flash
+    const model = 'gemini-3.8-flash';
 
     const systemInstruction = `Eres un asistente contable peruano especializado en digitalización de comprobantes de pago para viáticos (facturas, boletas, tickets de transporte/peaje, recibos).
 Tu tarea es extraer los datos visibles con total veracidad.
@@ -89,47 +88,22 @@ REGLAS OBLIGATORIAS:
 - "totalAmount": Importe total numérico pagado (ej: 118.00). Si no es legible, null.
 - "notes": Breve detalle o concepto principal del gasto (ej: Almuerzo ejecutivo, Peaje Panamericana Sur, Pasaje Lima-Arequipa).`;
 
-    let response;
-    try {
-      response = await ai.models.generateContent({
-        model: primaryModel,
-        contents: [
-          {
-            role: 'user',
-            parts: [
-              { inlineData: { data: imageBase64, mimeType: validMime } },
-              { text: `${systemInstruction}\n\n${promptText}` }
-            ]
-          }
-        ],
-        config: {
-          responseMimeType: 'application/json',
-          abortSignal: controller.signal
+    const response = await ai.models.generateContent({
+      model,
+      contents: [
+        {
+          role: 'user',
+          parts: [
+            { inlineData: { data: imageBase64, mimeType: validMime } },
+            { text: `${systemInstruction}\n\n${promptText}` }
+          ]
         }
-      });
-    } catch (modelErr) {
-      // If primary model failed (e.g. 404 not found or not provisioned) and it wasn't an abort/timeout
-      if (modelErr.name !== 'AbortError' && primaryModel !== fallbackModel) {
-        response = await ai.models.generateContent({
-          model: fallbackModel,
-          contents: [
-            {
-              role: 'user',
-              parts: [
-                { inlineData: { data: imageBase64, mimeType: validMime } },
-                { text: `${systemInstruction}\n\n${promptText}` }
-              ]
-            }
-          ],
-          config: {
-            responseMimeType: 'application/json',
-            abortSignal: controller.signal
-          }
-        });
-      } else {
-        throw modelErr;
+      ],
+      config: {
+        responseMimeType: 'application/json',
+        abortSignal: controller.signal
       }
-    }
+    });
 
     const responseText = response.text || '';
     // Clean potential markdown backticks if any

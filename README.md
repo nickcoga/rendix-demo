@@ -10,7 +10,7 @@ Aplicación móvil desarrollada en **React Native con Expo (SDK 58) y TypeScript
 * **Ciclo Completo de Rendición:**
   1. Creación de viaje (técnico, destino, motivo, fechas y adelanto entregado en PEN).
   2. Captura de comprobantes con cámara o galería con guardado privado inmutable.
-  3. Extracción asistida con **Google Gemini (3.8 Flash / 2.5 Flash)** a través de una función serverless en Vercel.
+  3. Extracción asistida con **Google Gemini (3.8 Flash)** a través de una función serverless en Vercel.
   4. Revisión y edición obligatoria por el técnico antes de guardar con badges de origen (*"Detectado por IA — revisar"*, *"No detectado"*, *"Editado manualmente"*).
   5. Modo manual inmediato y fluido si no hay conexión o si se agota el tiempo de espera.
   6. Resumen y balance económico en tiempo real (Adelanto, Gastado, Saldo a Devolver o Excedente a Reembolsar).
@@ -36,7 +36,7 @@ Aplicación móvil desarrollada en **React Native con Expo (SDK 58) y TypeScript
         │ 2. Inyecta GEMINI_API_KEY desde variables de entorno
         │    Timeout proveedor: 8.5s con HTTP 504 / 502
         ▼
-[ Google Gemini (gemini-3.8-flash / 2.5-flash) ]
+[ Google Gemini (gemini-3.8-flash) ]
         │
         ▼ 3. Retorna JSON estructurado (RUC, serie, número, base, IGV, total)
 [ Formulario de Revisión Humana en Rendix App ]
