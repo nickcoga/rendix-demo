@@ -24,6 +24,7 @@ import {
 import { createExpense } from '../../src/services/database/expenseService';
 import { StatusBadge } from '../../src/components/StatusBadge';
 import { Button } from '../../src/components/Button';
+import { evaluateTaxReconciliation } from '../../src/utils/taxReconciliation';
 
 export default function ExpenseFormScreen() {
   const { tripId, draftUri, aiData } = useLocalSearchParams<{
@@ -58,6 +59,9 @@ export default function ExpenseFormScreen() {
   const [igv, setIgv] = useState(
     parsedAi?.igv != null ? parsedAi.igv.toString() : ''
   );
+  const [rc, setRc] = useState(
+    parsedAi?.rc != null ? parsedAi.rc.toString() : ''
+  );
   const [totalAmount, setTotalAmount] = useState(
     parsedAi?.totalAmount != null ? parsedAi.totalAmount.toString() : ''
   );
@@ -74,6 +78,7 @@ export default function ExpenseFormScreen() {
     currency: parsedAi?.currency ? 'ai_detected' : 'not_detected',
     taxableBase: parsedAi?.taxableBase != null ? 'ai_detected' : 'not_detected',
     igv: parsedAi?.igv != null ? 'ai_detected' : 'not_detected',
+    rc: parsedAi?.rc != null ? 'ai_detected' : 'not_detected',
     totalAmount: parsedAi?.totalAmount != null ? 'ai_detected' : 'not_detected',
     notes: parsedAi?.notes ? 'ai_detected' : 'not_detected',
   });
@@ -89,17 +94,26 @@ export default function ExpenseFormScreen() {
     }));
   };
 
-  // Tax calculation advisory (non-blocking)
-  const numericBase = parseFloat(taxableBase.replace(',', '.')) || 0;
-  const numericIgv = parseFloat(igv.replace(',', '.')) || 0;
-  const numericTotal = parseFloat(totalAmount.replace(',', '.')) || 0;
+  // Accounting tax reconciliation (pure utility)
+  const recon = evaluateTaxReconciliation({
+    docType,
+    taxableBase,
+    igv,
+    rc,
+    totalAmount,
+  });
 
-  const hasTaxDiscrepancy =
-    docType === 'FACTURA' &&
-    numericBase > 0 &&
-    numericIgv > 0 &&
-    numericTotal > 0 &&
-    Math.abs(numericBase + numericIgv - numericTotal) > 0.15;
+  const {
+    numericBase,
+    numericIgv,
+    numericRc,
+    hasRcDeclared,
+    numericTotal,
+    calculatedSum,
+    hasTaxDiscrepancy,
+    isRcUnspecifiedDifference,
+    unspecifiedDiffAmount,
+  } = recon;
 
   const isRucInvalidLength = ruc.trim().length > 0 && ruc.trim().length !== 11;
 
@@ -128,6 +142,7 @@ export default function ExpenseFormScreen() {
         currency: currency,
         taxable_base: numericBase > 0 ? numericBase : null,
         igv: numericIgv > 0 ? numericIgv : null,
+        rc: hasRcDeclared && numericRc !== null ? numericRc : null,
         total_amount: numericTotal,
         draft_photo_uri: draftUri,
         notes: notes.trim() || null,
@@ -183,12 +198,24 @@ export default function ExpenseFormScreen() {
           </View>
         )}
 
-        {/* Tax discrepancy warning (non-blocking) */}
+        {/* Tax discrepancy warning (when declared values conflict) */}
         {hasTaxDiscrepancy && (
           <View style={styles.warningBox}>
             <Ionicons name="alert-circle-outline" size={18} color="#B45309" style={{ marginRight: 8 }} />
             <Text style={styles.warningText}>
-              Aviso: La base imponible (S/ {numericBase.toFixed(2)}) + IGV (S/ {numericIgv.toFixed(2)}) difiere del total (S/ {numericTotal.toFixed(2)}). Puedes revisarlo o guardarlo de todas formas.
+              Aviso: La suma (Base S/ {numericBase.toFixed(2)} + IGV S/ {numericIgv.toFixed(2)}{hasRcDeclared && numericRc !== null ? ` + RC S/ ${numericRc.toFixed(2)}` : ''} = S/ {calculatedSum.toFixed(2)}) difiere del total (S/ {numericTotal.toFixed(2)}). Puedes revisarlo o guardarlo de todas formas.
+            </Text>
+          </View>
+        )}
+
+        {/* Informational notice when RC is unspecified */}
+        {isRcUnspecifiedDifference && (
+          <View style={[styles.warningBox, { backgroundColor: '#EFF6FF', borderColor: '#BFDBFE' }]}>
+            <Ionicons name="information-circle-outline" size={18} color="#1D4ED8" style={{ marginRight: 8 }} />
+            <Text style={[styles.warningText, { color: '#1E40AF' }]}>
+              {unspecifiedDiffAmount > 0.15
+                ? `Nota: Existe una diferencia de S/ ${unspecifiedDiffAmount.toFixed(2)} entre Base + IGV y el Total. Si el comprobante incluye Recargo al Consumo (RC), puedes registrarlo en el campo RC.`
+                : 'Nota: Base e IGV coinciden con el Total. Si confirmas que este comprobante no incluye Recargo al Consumo, ingresa 0 en el campo RC para completar la conciliación.'}
             </Text>
           </View>
         )}
@@ -417,6 +444,23 @@ export default function ExpenseFormScreen() {
               }}
             />
           </View>
+        </View>
+
+        {/* Recargo al Consumo (RC) - Optional for restaurants/services */}
+        <View style={styles.fieldCard}>
+          <Text style={styles.fieldLabel}>Recargo al Consumo / RC (Opcional)</Text>
+          <StatusBadge status={fieldStatus.rc} />
+          <TextInput
+            style={styles.textInput}
+            placeholder="0.00"
+            placeholderTextColor={COLORS.textLight}
+            keyboardType="decimal-pad"
+            value={rc}
+            onChangeText={(val) => {
+              setRc(val);
+              markEdited('rc');
+            }}
+          />
         </View>
 
         {/* Total Amount (Crucial / Required) */}

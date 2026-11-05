@@ -64,8 +64,8 @@ export default async function handler(req, res) {
   try {
     const ai = new GoogleGenAI({ apiKey });
 
-    // Modelo exclusivo de extracción: gemini-3.8-flash
-    const model = 'gemini-3.8-flash';
+    // Modelo exclusivo de extracción: gemini-3.5-flash-lite
+    const model = 'gemini-3.5-flash-lite';
 
     const systemInstruction = `Eres un asistente contable peruano especializado en digitalización de comprobantes de pago para viáticos (facturas, boletas, tickets de transporte/peaje, recibos).
 Tu tarea es extraer los datos visibles con total veracidad.
@@ -83,8 +83,9 @@ REGLAS OBLIGATORIAS:
 - "number": Correlativo o número de comprobante. Si no está visible, null.
 - "date": Fecha de emisión en formato YYYY-MM-DD. Si no está visible, null.
 - "currency": "PEN" o "USD". Si no está explícito en el comprobante, déjalo en null.
-- "taxableBase": Base imponible numérica (ej: 100.00). Si no está desglosada, null.
-- "igv": Monto numérico del IGV (ej: 18.00). Si no está desglosado, null.
+- "taxableBase": Base imponible numérica correspondiente exclusivamente a las operaciones gravadas con IGV (ej: 100.00). No utilices el subtotal comercial ni importes que incluyan conceptos no gravados o recargos. Si no está desglosada, null.
+- "igv": Monto numérico del IGV (18% sobre la base gravada). IMPORTANTE: Extrae el monto correspondiente al 18% de impuesto (ej: 23.37) y NO lo confundas con el Recargo al Consumo "RC" (ej: 7.79). Si no está desglosado, null.
+- "rc": Monto numérico visible del Recargo al Consumo (RC) o servicio (ej: 7.79). Extrae únicamente el importe visible en el documento. Si no aparece, no aplica o no puede identificarse, déjalo como null. No lo calcules automáticamente ni asumas porcentajes fijos.
 - "totalAmount": Importe total numérico pagado (ej: 118.00). Si no es legible, null.
 - "notes": Breve detalle o concepto principal del gasto (ej: Almuerzo ejecutivo, Peaje Panamericana Sur, Pasaje Lima-Arequipa).`;
 
@@ -122,6 +123,7 @@ REGLAS OBLIGATORIAS:
         currency: parsedData.currency || null,
         taxableBase: typeof parsedData.taxableBase === 'number' ? parsedData.taxableBase : (parsedData.taxableBase ? parseFloat(parsedData.taxableBase) : null),
         igv: typeof parsedData.igv === 'number' ? parsedData.igv : (parsedData.igv ? parseFloat(parsedData.igv) : null),
+        rc: typeof parsedData.rc === 'number' ? parsedData.rc : (parsedData.rc ? parseFloat(parsedData.rc) : null),
         totalAmount: typeof parsedData.totalAmount === 'number' ? parsedData.totalAmount : (parsedData.totalAmount ? parseFloat(parsedData.totalAmount) : null),
         notes: parsedData.notes || null
       }

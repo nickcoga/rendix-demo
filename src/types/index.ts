@@ -34,6 +34,7 @@ export interface Expense {
   currency: string;
   taxable_base: number | null;
   igv: number | null;
+  rc: number | null;
   total_amount: number;
   photo_uri: string;
   notes: string | null;
@@ -50,6 +51,7 @@ export interface ExtractedReceiptData {
   currency: string | null;
   taxableBase: number | null;
   igv: number | null;
+  rc: number | null;
   totalAmount: number | null;
   notes: string | null;
 }

@@ -33,6 +33,7 @@ export async function initDatabase(db: SQLiteDatabase): Promise<void> {
       currency TEXT NOT NULL DEFAULT 'PEN',
       taxable_base REAL,
       igv REAL,
+      rc REAL,
       total_amount REAL NOT NULL,
       photo_uri TEXT NOT NULL,
       notes TEXT,
@@ -45,4 +46,11 @@ export async function initDatabase(db: SQLiteDatabase): Promise<void> {
       value TEXT NOT NULL
     );
   `);
+
+  // Idempotent migration: ensure 'rc' column exists for existing installations
+  const columns = await db.getAllAsync<{ name: string }>('PRAGMA table_info(expenses);');
+  const hasRc = columns.some((col) => col.name === 'rc');
+  if (!hasRc) {
+    await db.execAsync('ALTER TABLE expenses ADD COLUMN rc REAL;');
+  }
 }

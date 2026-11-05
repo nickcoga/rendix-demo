@@ -37,6 +37,7 @@ export async function createExpense(
     currency?: string;
     taxable_base?: number | null;
     igv?: number | null;
+    rc?: number | null;
     total_amount: number;
     draft_photo_uri: string;
     notes?: string | null;
@@ -52,8 +53,8 @@ export async function createExpense(
   const result = await db.runAsync(
     `INSERT INTO expenses (
       trip_id, category, document_type, date, vendor_name, ruc, series, number,
-      currency, taxable_base, igv, total_amount, photo_uri, notes
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      currency, taxable_base, igv, rc, total_amount, photo_uri, notes
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       data.trip_id,
       data.category,
@@ -66,6 +67,7 @@ export async function createExpense(
       data.currency || 'PEN',
       data.taxable_base ?? null,
       data.igv ?? null,
+      data.rc ?? null,
       data.total_amount,
       permanentPhotoUri,
       data.notes ? data.notes.trim() : null,
@@ -89,6 +91,7 @@ export async function updateExpense(
     currency?: string;
     taxable_base?: number | null;
     igv?: number | null;
+    rc?: number | null;
     total_amount?: number;
     new_draft_photo_uri?: string;
     notes?: string | null;
@@ -157,6 +160,10 @@ export async function updateExpense(
   if (data.igv !== undefined) {
     fields.push('igv = ?');
     values.push(data.igv);
+  }
+  if (data.rc !== undefined) {
+    fields.push('rc = ?');
+    values.push(data.rc ?? null);
   }
   if (data.total_amount !== undefined) {
     fields.push('total_amount = ?');
