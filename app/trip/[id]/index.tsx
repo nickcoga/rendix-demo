@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   RefreshControl,
   TouchableOpacity,
+  BackHandler,
 } from 'react-native';
 import { useLocalSearchParams, useRouter, useFocusEffect, Stack } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
@@ -66,10 +67,26 @@ export default function TripDetailScreen() {
     }
   }, [db, tripId]);
 
+  const handleGoBack = useCallback(() => {
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace('/');
+    }
+  }, [router]);
+
   useFocusEffect(
     useCallback(() => {
       loadData();
-    }, [loadData])
+
+      const onBackPress = () => {
+        handleGoBack();
+        return true;
+      };
+
+      const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+      return () => subscription.remove();
+    }, [loadData, handleGoBack])
   );
 
   const onRefresh = () => {
@@ -136,6 +153,16 @@ export default function TripDetailScreen() {
       <Stack.Screen
         options={{
           title: trip.destination,
+          headerLeft: () => (
+            <TouchableOpacity
+              onPress={handleGoBack}
+              activeOpacity={0.7}
+              style={{ paddingRight: 16, paddingVertical: 6 }}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Ionicons name="arrow-back" size={24} color={COLORS.textWhite} />
+            </TouchableOpacity>
+          ),
           headerRight: () => (
             <TouchableOpacity onPress={handleDeleteTrip} style={{ padding: 6 }}>
               <Ionicons name="trash-outline" size={20} color="#FCA5A5" />

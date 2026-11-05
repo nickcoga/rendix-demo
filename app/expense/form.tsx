@@ -148,9 +148,12 @@ export default function ExpenseFormScreen() {
         notes: notes.trim() || null,
       });
 
-      // Navigate back to the trip
-      router.dismissAll();
-      router.replace(`/trip/${parsedTripId}`);
+      // Navigate back to the trip preserving navigation stack
+      if (router.canDismiss()) {
+        router.dismissTo(`/trip/${parsedTripId}`);
+      } else {
+        router.replace(`/trip/${parsedTripId}`);
+      }
     } catch (err: any) {
       Alert.alert('Error al guardar', err?.message || 'No se pudo registrar el comprobante');
     } finally {
