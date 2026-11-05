@@ -78,9 +78,17 @@ export function evaluateTaxReconciliation(input: TaxReconciliationInput): TaxRec
 
   if (hasRcDeclared && numericRc !== null) {
     // RC is explicitly declared (either > 0 or confirmed 0)
-    const calculatedSum = numericBase + numericIgv + numericRc;
-    const diff = Math.abs(calculatedSum - numericTotal);
-    const matches = diff <= 0.15;
+    // Tolerance comparison using integer cents to avoid IEEE 754 float precision errors
+    const baseCents = toCents(numericBase);
+    const igvCents = toCents(numericIgv);
+    const rcCents = toCents(numericRc);
+    const totalCents = toCents(numericTotal);
+
+    const calculatedSumCents = baseCents + igvCents + rcCents;
+    const diffCents = Math.abs(calculatedSumCents - totalCents);
+    const matches = diffCents <= 15; // Tolerance: S/ 0.15 (15 integer cents)
+    const calculatedSum = calculatedSumCents / 100;
+    const diff = diffCents / 100;
 
     return {
       status: matches ? 'BALANCED' : 'DISCREPANCY',
@@ -99,13 +107,19 @@ export function evaluateTaxReconciliation(input: TaxReconciliationInput): TaxRec
   }
 
   // RC is unknown / not declared (numericRc === null)
-  const basePlusIgv = numericBase + numericIgv;
-  const residual = numericTotal - basePlusIgv;
+  // Tolerance comparison using integer cents
+  const baseCents = toCents(numericBase);
+  const igvCents = toCents(numericIgv);
+  const totalCents = toCents(numericTotal);
 
-  // If Base + IGV strictly exceeds Total by more than tolerance (0.15),
+  const basePlusIgvCents = baseCents + igvCents;
+  const residualCents = totalCents - basePlusIgvCents;
+  const calculatedSum = basePlusIgvCents / 100;
+  const diff = Math.abs(residualCents) / 100;
+
+  // If Base + IGV strictly exceeds Total by more than tolerance (15 cents / S/ 0.15),
   // this is a demonstrable discrepancy because RC cannot be negative.
-  if (basePlusIgv > numericTotal + 0.15) {
-    const diff = Math.abs(residual);
+  if (basePlusIgvCents - totalCents > 15) {
     return {
       status: 'DISCREPANCY',
       hasTaxDiscrepancy: true,
@@ -116,7 +130,7 @@ export function evaluateTaxReconciliation(input: TaxReconciliationInput): TaxRec
       numericRc: null,
       hasRcDeclared: false,
       numericTotal,
-      calculatedSum: basePlusIgv,
+      calculatedSum,
       unspecifiedDiffAmount: 0,
       diff,
     };
@@ -126,7 +140,7 @@ export function evaluateTaxReconciliation(input: TaxReconciliationInput): TaxRec
   // An unknown RC is NEVER equivalent to a confirmed nonexistent RC (0),
   // even when Base + IGV matches Total.
   // Therefore, reconciliation remains incomplete pending confirmation.
-  const unspecifiedDiff = residual > 0.15 ? residual : 0;
+  const unspecifiedDiff = residualCents > 15 ? residualCents / 100 : 0;
   return {
     status: 'INCOMPLETE_UNKNOWN_RC',
     hasTaxDiscrepancy: false,
@@ -137,10 +151,14 @@ export function evaluateTaxReconciliation(input: TaxReconciliationInput): TaxRec
     numericRc: null,
     hasRcDeclared: false,
     numericTotal,
-    calculatedSum: basePlusIgv,
+    calculatedSum,
     unspecifiedDiffAmount: unspecifiedDiff,
-    diff: Math.abs(residual),
+    diff,
   };
+}
+
+function toCents(val: number): number {
+  return Math.round((val || 0) * 100);
 }
 
 function parseNumeric(val: string | number | null | undefined): number {
